@@ -1,43 +1,48 @@
 // This class is used to create Mat data structures
-
-public class MatStructure {
-    private int[][][] Mat;
+public class Mat{
+    private double[][][] Mat;
     private int rows;
     private int cols;
 
-    // Mat is a 3D array, storing rows, columns, and color chaanels se
+    // Mat is a 3D array, storing rows, columns, and color channels separately
+    // Size: [rows][columns][3]
     public Mat(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
-        this.Mat = new int[rows][cols][3];
+        this.Mat = new double[rows][cols][3];
     }
 
-    public int[] get(int row, int col) {
-        return Mat[row][col];
+
+    public double[] get(int row, int col) {
+        return this.Mat[row][col];
     }
 
-    public void set(int row, int col, int[] value) {
-        Mat[row][col] = value;
+    public double get(int row, int col, int channel) {
+        return this.Mat[row][col][channel];
     }
 
-    public void set(int row, int col, int blue, int green, int red) {
-        Mat[row][col][0] = blue;  
-        Mat[row][col][1] = green; 
-        Mat[row][col][2] = red;   
+    public void set(int row, int col, double[] value) {
+        this.Mat[row][col] = value;
     }
 
-    public int rows() {
-        return rows;
+    public void set(int row, int col, double blue, double green, double red) {
+        this.Mat[row][col][0] = blue;  
+        this.Mat[row][col][1] = green; 
+        this.Mat[row][col][2] = red;   
     }
 
-    public int cols() {
-        return cols;
+    public int getRowSize() {
+        return this.rows;
+    }
+
+    public int getColSize() {
+        return this.cols;
     }
 
     public void print() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                System.out.print("(" + Mat[i][j][0] + ", " + Mat[i][j][1] + ", " + Mat[i][j][2] + ") ");
+        for (int i = 0; i < this.rows; i++) {
+            for (int j = 0; j < this.cols; j++) {
+                System.out.print("(" + this.Mat[i][j][0] + ", " + this.Mat[i][j][1] + ", " + this.Mat[i][j][2] + ") ");
             }
             System.out.println();
         }
