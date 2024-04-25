@@ -1,3 +1,4 @@
+//This class is used to operate image, like image2Mat and mat2Image
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -26,22 +27,4 @@ public class ImageOperation{
         return mat;
     }
 
-    // Turn BGR format to Gray format, the 3 color channals are all grayscale value
-    public static Mat toGray(Mat mat){
-        int width = mat.getColSize();
-        int height = mat.getRowSize();
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                double blue = mat.get(y, x, 0);
-                double green = mat.get(y, x, 1);
-                double red = mat.get(y, x, 2);
-                double gray = 0.299 * red + 0.587 * green + 0.114 * blue;
-                double[] pixel = {gray, gray, gray};
-                mat.set(y, x, pixel);
-            }
-        }
-
-        return mat;
-    }
 }
