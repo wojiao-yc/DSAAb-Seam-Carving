@@ -1,7 +1,6 @@
-import java.util.Arrays;
-import java.util.Comparator;
-
 // This class is used to perform related calculations on mat
+// For different mode, use findHorizontalSeam and findVerticalSeam to remove seam, use findNthVerticalSeam and findNthHorizontalSeam to insert seam
+
 public class MatCalculation{
 
         // Calculate the horizontal gradient a pixel
@@ -165,4 +164,107 @@ public class MatCalculation{
         return seams;
     }
 
+
+
+    // Using dynamic programming to find the seam that should be deleted horizontally
+    public static int[] findHorizontalSeam(Mat energyMatrix) {
+        int rows = energyMatrix.getRowSize();
+        int cols = energyMatrix.getColSize();
+
+        int[] seam = new int[cols];
+
+
+        double[][] dp = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            dp[i][0] = energyMatrix.get(i, 0, 0);
+        }
+        for (int j = 1; j < cols; j++) {
+            for (int i = 0; i < rows; i++) {
+                dp[i][j] = energyMatrix.get(i, j, 0) + Math.min(
+                        dp[Math.max(0, i - 1)][j - 1],
+                        Math.min(dp[i][j - 1],
+                                dp[Math.min(rows - 1, i + 1)][j - 1])
+                );
+            }
+        }
+        double minEnergy = Double.MAX_VALUE;
+        int minRow = 0;
+        for (int i = 0; i < rows; i++) {
+            if (dp[i][cols - 1] < minEnergy) {
+                minEnergy = dp[i][cols - 1];
+                minRow = i;
+            }
+        }
+        seam[cols - 1] = minRow;
+        // Backtrack to find the current path
+        for (int j = cols - 2; j >= 0; j--) {
+            int prevRow = seam[j + 1];
+            int minPrevRow = prevRow;
+            if (prevRow > 0 && dp[prevRow - 1][j] < dp[minPrevRow][j]) {
+                minPrevRow = prevRow - 1;
+            }
+            if (prevRow < rows - 1 && dp[prevRow + 1][j] < dp[minPrevRow][j]) {
+                minPrevRow = prevRow + 1;
+            }
+            seam[j] = minPrevRow;
+        }
+        // Mark the pixel positions that have been visited by the current path
+        for (int j = 0; j < cols; j++) {
+            energyMatrix.set(seam[j], j, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        }
+
+        return seam;
+    }
+
+
+
+    // Using dynamic programming to find the seam that should be deleted vertically
+    public static int[] findVerticalSeam(Mat energyMatrix) {
+        int rows = energyMatrix.getRowSize();
+        int cols = energyMatrix.getColSize();
+
+        int[] seam = new int[rows];
+
+
+        double[][] dp = new double[rows][cols];
+        for (int j = 0; j < cols; j++) {
+            dp[0][j] = energyMatrix.get(0, j, 0);
+        }
+        for (int i = 1; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                dp[i][j] = energyMatrix.get(i, j, 0) + Math.min(
+                        dp[i - 1][Math.max(0, j - 1)],
+                        Math.min(dp[i - 1][j],
+                                dp[i - 1][Math.min(cols - 1, j + 1)])
+                );
+            }
+        }
+        double minEnergy = Double.MAX_VALUE;
+        int minCol = 0;
+        for (int j = 0; j < cols; j++) {
+            if (dp[rows - 1][j] < minEnergy) {
+                minEnergy = dp[rows - 1][j];
+                minCol = j;
+            }
+        }
+        seam[rows - 1] = minCol;
+        // Backtrack to find the current path
+        for (int i = rows - 2; i >= 0; i--) {
+            int prevCol = seam[i + 1];
+            int minPrevCol = prevCol;
+            if (prevCol > 0 && dp[i][prevCol - 1] < dp[i][minPrevCol]) {
+                minPrevCol = prevCol - 1;
+            }
+            if (prevCol < cols - 1 && dp[i][prevCol + 1] < dp[i][minPrevCol]) {
+                minPrevCol = prevCol + 1;
+            }
+            seam[i] = minPrevCol;
+        }
+        // Mark the pixel positions that have been visited by the current path
+        for (int i = 0; i < rows; i++) {
+            energyMatrix.set(i, seam[i], Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        }
+
+        return seam;
+    }
 }

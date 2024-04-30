@@ -20,16 +20,14 @@ public class Main {
         Mat mat;
         Mat energyMat;
 
-        int[][] road;
-        mat = ImageOperation.imageToMat("E:\\桌面\\屏幕截图 2024-04-25 191608.png");
+        int[] road;
+        mat = ImageOperation.imageToMat("E:\\桌面\\saber.jpg");
 
 
-        energyMat = MatCalculation.computeEnergyMatrix(mat);
-
-        road = MatCalculation.findNthVerticalSeam(energyMat, 1000);
-
-        for (int i = 0; i < 1000; i++){
-            mat = MatOperation.insertVerticalSeam(mat, road[i]);
+        for (int i = 0; i < 800; i++){
+            energyMat = MatCalculation.computeEnergyMatrix(mat);
+            road = MatCalculation.findVerticalSeam(energyMat);
+            mat = MatOperation.removeVerticalSeam(mat, road);
         }
 
 
