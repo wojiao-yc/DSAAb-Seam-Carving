@@ -130,22 +130,22 @@ public class ImageGUI extends JFrame {
     }
 
     private void saveSelectedArea() {
+        int x = (int) selectedArea.getX();
+        int y = (int) selectedArea.getY();
+        int width = (int) selectedArea.getWidth();
+        int height = (int) selectedArea.getHeight();
+        BufferedImage selectedImage = originalImage.getSubimage(x, y, width, height);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Selected Area");
-        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
-            String savePath = fileChooser.getSelectedFile().getAbsolutePath();
-            int x = (int) selectedArea.getX();
-            int y = (int) selectedArea.getY();
-            int width = (int) selectedArea.getWidth();
-            int height = (int) selectedArea.getHeight();
+            File fileToSave = fileChooser.getSelectedFile();
             try {
-                BufferedImage selectedImage = originalImage.getSubimage(x, y, width, height);
-                ImageIO.write(selectedImage, "jpg", new File(savePath + File.separator + "selected_area.jpg"));
-                JOptionPane.showMessageDialog(this, "Selected area saved successfully!");
-            } catch (IOException e) {
-                e.printStackTrace();
+                ImageIO.write(selectedImage, "png", fileToSave);
+                JOptionPane.showMessageDialog(this, "Selected area saved successfully.");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error saving selected area: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
