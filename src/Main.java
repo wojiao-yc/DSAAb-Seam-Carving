@@ -1,9 +1,7 @@
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.swing.*;
-
 
 public class Main {
 
@@ -22,16 +20,22 @@ public class Main {
         Mat energyMat;
 
         int[] road;
+
         mat = ImageOperation.imageToMat("C:\\Users\\WANG\\Desktop\\test.png");
 
-
-        for (int i = 0; i < 800; i++){
+        // 删除垂直缝隙
+        for (int i = 0; i < 100; i++){
             energyMat = MatCalculation.computeEnergyMatrix(mat);
             road = MatCalculation.findVerticalSeam(energyMat);
             mat = MatOperation.removeVerticalSeam(mat, road);
         }
 
-
+        // 删除水平缝隙
+        for (int i = 0; i < 100; i++){
+            energyMat = MatCalculation.computeEnergyMatrix(mat);
+            road = MatCalculation.findHorizontalSeam(energyMat);
+            mat = MatOperation.removeHorizontalSeam(mat, road);
+        }
 
         BufferedImage image;
 
@@ -40,4 +44,3 @@ public class Main {
         displayImage(image);
     }
 }
-

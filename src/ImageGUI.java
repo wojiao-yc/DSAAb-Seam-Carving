@@ -19,7 +19,8 @@ public class ImageGUI extends JFrame {
     private BufferedImage originalImage;
     private BufferedImage markedImage;
     private Rectangle2D.Double selectedArea;
-    private Mat energyMatrix; // 存储能量矩阵
+    private Mat energyMatrix;
+    private Mat mat;
 
     public ImageGUI() {
         setTitle("Image GUI");
@@ -57,7 +58,7 @@ public class ImageGUI extends JFrame {
                     imageLabel.setIcon(new ImageIcon(originalImage));
 
                     // 重新设置能量矩阵
-                    energyMatrix = ImageOperation.imageToMat(imagePath);
+                    mat = ImageOperation.imageToMat(imagePath);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -133,42 +134,63 @@ public class ImageGUI extends JFrame {
     }
 
     private void saveSelectedButtonActionPerformed() {
-        if (originalImage != null && markedImage != null) {
-            saveSelectedArea();
-            processSelectedArea(energyMatrix, Double.MAX_VALUE);
+        if (originalImage != null) {
+            // 如果没有选择保护区域，则直接执行默认的 seam carving 过程
+            if (selectedArea == null) {
+                int numSeamsToRemove = 100;
+                for (int i = 0; i < numSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] road = MatCalculation.findVerticalSeam(energyMatrix);
+                    mat = MatOperation.removeVerticalSeam(mat, road);
+                }
+                for (int i = 0; i < numSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
+                    mat = MatOperation.removeHorizontalSeam(mat, road);
+                }
 
-            // 进行 seam carving
-            int numSeamsToRemove = 800; // 这里设置为移除 800 条拐缝，可以根据需要调整
-            for (int i = 0; i < numSeamsToRemove; i++) {
-                energyMatrix = MatCalculation.computeEnergyMatrix(energyMatrix);
-                int[] road = MatCalculation.findVerticalSeam(energyMatrix);
-                energyMatrix = MatOperation.removeVerticalSeam(energyMatrix, road);
+                // 将处理后的能量矩阵转换为图片并保存
+                BufferedImage resultImage = MatOperation.matToImage(mat);
+                saveResultImage(resultImage);
+            } else {
+                // 对用户选择的区域进行mat能量值最大化处理
+                processSelectedArea(mat, Double.MAX_VALUE);
+
+                // 进行 seam carving
+                int numSeamsToRemove = 100;
+                for (int i = 0; i < numSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] road = MatCalculation.findVerticalSeam(energyMatrix);
+                    mat = MatOperation.removeVerticalSeam(mat, road);
+                }
+
+                // 进行水平缝隙的 seam carving
+                for (int i = 0; i < numSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
+                    mat = MatOperation.removeHorizontalSeam(mat, road);
+                }
+
+                // 将处理后的能量矩阵转换为图片并保存
+                BufferedImage resultImage = MatOperation.matToImage(mat);
+                saveResultImage(resultImage);
             }
-
-            // 将处理后的能量矩阵转换为图片并显示
-            BufferedImage resultImage = MatOperation.matToImage(energyMatrix);
-            imageLabel.setIcon(new ImageIcon(resultImage));
         }
     }
 
-    // 保存所选区域的方法
-    private void saveSelectedArea() {
-        int x = (int) selectedArea.getX();
-        int y = (int) selectedArea.getY();
-        int width = (int) selectedArea.getWidth();
-        int height = (int) selectedArea.getHeight();
-        BufferedImage selectedImage = originalImage.getSubimage(x, y, width, height);
+    // 保存处理后的图片
+    private void saveResultImage(BufferedImage resultImage) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Selected Area");
+        fileChooser.setDialogTitle("Save Processed Image");
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
-                ImageIO.write(selectedImage, "png", fileToSave);
-                JOptionPane.showMessageDialog(this, "Selected area saved successfully.");
+                ImageIO.write(resultImage, "png", fileToSave);
+                JOptionPane.showMessageDialog(this, "Processed image saved successfully.");
             } catch (IOException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error saving selected area: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error saving processed image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
