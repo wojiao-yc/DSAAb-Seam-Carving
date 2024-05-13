@@ -22,7 +22,7 @@ public class Main {
         Mat energyMat;
 
         int[] road;
-        mat = ImageOperation.imageToMat("C:\\Users\\WANG\\Desktop\\111.jpg");
+        mat = ImageOperation.imageToMat("C:\\Users\\WANG\\Desktop\\test.png");
 
 
         for (int i = 0; i < 800; i++){

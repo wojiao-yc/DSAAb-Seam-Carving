@@ -19,6 +19,7 @@ public class ImageGUI extends JFrame {
     private BufferedImage originalImage;
     private BufferedImage markedImage;
     private Rectangle2D.Double selectedArea;
+    private Mat energyMatrix; // 存储能量矩阵
 
     public ImageGUI() {
         setTitle("Image GUI");
@@ -54,6 +55,9 @@ public class ImageGUI extends JFrame {
                 try {
                     originalImage = ImageIO.read(new File(imagePath));
                     imageLabel.setIcon(new ImageIcon(originalImage));
+
+                    // 重新设置能量矩阵
+                    energyMatrix = ImageOperation.imageToMat(imagePath);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -72,9 +76,7 @@ public class ImageGUI extends JFrame {
         saveSelectedButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (originalImage != null && markedImage != null) {
-                    saveSelectedArea();
-                }
+                saveSelectedButtonActionPerformed();
             }
         });
     }
@@ -99,6 +101,7 @@ public class ImageGUI extends JFrame {
                 }
             }
         };
+
         panel.addMouseListener(new MouseAdapter() {
             private Point startPoint;
 
@@ -129,6 +132,26 @@ public class ImageGUI extends JFrame {
         markFrame.setVisible(true);
     }
 
+    private void saveSelectedButtonActionPerformed() {
+        if (originalImage != null && markedImage != null) {
+            saveSelectedArea();
+            processSelectedArea(energyMatrix, Double.MAX_VALUE);
+
+            // 进行 seam carving
+            int numSeamsToRemove = 800; // 这里设置为移除 800 条拐缝，可以根据需要调整
+            for (int i = 0; i < numSeamsToRemove; i++) {
+                energyMatrix = MatCalculation.computeEnergyMatrix(energyMatrix);
+                int[] road = MatCalculation.findVerticalSeam(energyMatrix);
+                energyMatrix = MatOperation.removeVerticalSeam(energyMatrix, road);
+            }
+
+            // 将处理后的能量矩阵转换为图片并显示
+            BufferedImage resultImage = MatOperation.matToImage(energyMatrix);
+            imageLabel.setIcon(new ImageIcon(resultImage));
+        }
+    }
+
+    // 保存所选区域的方法
     private void saveSelectedArea() {
         int x = (int) selectedArea.getX();
         int y = (int) selectedArea.getY();
@@ -146,6 +169,23 @@ public class ImageGUI extends JFrame {
             } catch (IOException ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Error saving selected area: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // 处理用户选择的区域并将其与能量矩阵相关联
+    private void processSelectedArea(Mat energyMatrix, double energyValue) {
+        if (selectedArea != null) {
+            int x = (int) selectedArea.getX();
+            int y = (int) selectedArea.getY();
+            int width = (int) selectedArea.getWidth();
+            int height = (int) selectedArea.getHeight();
+
+            // 将所选区域内的所有像素的能量值设置为指定的值
+            for (int i = y; i < y + height; i++) {
+                for (int j = x; j < x + width; j++) {
+                    energyMatrix.set(i, j, energyValue, energyValue, energyValue);
+                }
             }
         }
     }
