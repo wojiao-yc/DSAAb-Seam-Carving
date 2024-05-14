@@ -16,11 +16,16 @@ public class ImageGUI extends JFrame {
     private JLabel imageLabel;
     private JButton selectAreaButton;
     private JButton saveSelectedButton;
+    private JButton expandButton;
+    private JButton saveExpansion;
+
     private BufferedImage originalImage;
     private BufferedImage markedImage;
     private Rectangle2D.Double selectedArea;
     private Mat energyMatrix;
     private Mat mat;
+    private int horizontalSeamsToAdd;
+    private int verticalSeamsToAdd;
 
     public ImageGUI() {
         setTitle("Image GUI");
@@ -40,14 +45,37 @@ public class ImageGUI extends JFrame {
         centerPanel.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel();
-        selectAreaButton = new JButton("Select Area");
-        saveSelectedButton = new JButton("Save Selected Area");
+        selectAreaButton = new JButton("选择保护区域");
+        saveSelectedButton = new JButton("保存缩小后的图片");
+        expandButton = new JButton("放大图片");
+        saveExpansion = new JButton("保存放大图片");
         bottomPanel.add(selectAreaButton);
         bottomPanel.add(saveSelectedButton);
+        bottomPanel.add(expandButton);
+        bottomPanel.add(saveExpansion);
 
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+
+        expandButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String horizontalInput = JOptionPane.showInputDialog("请输入要插入的水平seam数量：");
+                String verticalInput = JOptionPane.showInputDialog("请输入要插入的竖直seam数量：");
+
+                try {
+                    horizontalSeamsToAdd = Integer.parseInt(horizontalInput);
+                    verticalSeamsToAdd = Integer.parseInt(verticalInput);
+
+                    if (horizontalSeamsToAdd > 0 || verticalSeamsToAdd > 0) {
+                        expandImage(horizontalSeamsToAdd, verticalSeamsToAdd);
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(ImageGUI.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         openImageButton.addActionListener(new ActionListener() {
             @Override
@@ -56,9 +84,7 @@ public class ImageGUI extends JFrame {
                 try {
                     originalImage = ImageIO.read(new File(imagePath));
                     imageLabel.setIcon(new ImageIcon(originalImage));
-
-                    // 重新设置能量矩阵
-                    mat = ImageOperation.imageToMat(imagePath);
+                    mat = ImageOperation.imageToMat(imagePath); // Assuming this method exists and converts an image to a Mat object
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -80,6 +106,37 @@ public class ImageGUI extends JFrame {
                 saveSelectedButtonActionPerformed();
             }
         });
+
+        saveExpansion.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveExpandedImage();
+            }
+        });
+    }
+
+    private void expandImage(int horizontalSeams, int verticalSeams) {
+        try {
+            energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+
+            int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeams);
+            for (int i = 0; i < verticalSeams; i++) {
+                mat = MatOperation.insertVerticalSeam(mat, verticalSeamsToInsert[i]);
+            }
+
+            energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+            int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeams);
+            for (int i = 0; i < horizontalSeams; i++) {
+                mat = MatOperation.insertHorizontalSeam(mat, horizontalSeamsToInsert[i]);
+            }
+
+            BufferedImage expandedImage = MatOperation.matToImage(mat);
+            imageLabel.setIcon(new ImageIcon(expandedImage));
+            JOptionPane.showMessageDialog(this, "图片放大成功！");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "图片放大失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void markSelectedArea() {
@@ -135,7 +192,6 @@ public class ImageGUI extends JFrame {
 
     private void saveSelectedButtonActionPerformed() {
         if (originalImage != null) {
-            // 如果没有选择保护区域，则直接执行默认的 seam carving 过程
             if (selectedArea == null) {
                 int numSeamsToRemove = 100;
                 for (int i = 0; i < numSeamsToRemove; i++) {
@@ -148,66 +204,63 @@ public class ImageGUI extends JFrame {
                     int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
                     mat = MatOperation.removeHorizontalSeam(mat, road);
                 }
-
-                // 将处理后的能量矩阵转换为图片并保存
                 BufferedImage resultImage = MatOperation.matToImage(mat);
                 saveResultImage(resultImage);
             } else {
-                // 对用户选择的区域进行mat能量值最大化处理
                 processSelectedArea(mat, Double.MAX_VALUE);
-
-                // 进行 seam carving
                 int numSeamsToRemove = 100;
                 for (int i = 0; i < numSeamsToRemove; i++) {
                     energyMatrix = MatCalculation.computeEnergyMatrix(mat);
                     int[] road = MatCalculation.findVerticalSeam(energyMatrix);
                     mat = MatOperation.removeVerticalSeam(mat, road);
                 }
-
-                // 进行水平缝隙的 seam carving
                 for (int i = 0; i < numSeamsToRemove; i++) {
                     energyMatrix = MatCalculation.computeEnergyMatrix(mat);
                     int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
                     mat = MatOperation.removeHorizontalSeam(mat, road);
                 }
-
-                // 将处理后的能量矩阵转换为图片并保存
                 BufferedImage resultImage = MatOperation.matToImage(mat);
                 saveResultImage(resultImage);
             }
         }
     }
 
-    // 保存处理后的图片
+    private void saveExpandedImage() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Expanded Image");
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            try {
+                ImageIO.write(MatOperation.matToImage(mat), "png", fileToSave);
+                JOptionPane.showMessageDialog(this, "Expanded image saved successfully.");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error saving expanded image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void saveResultImage(BufferedImage resultImage) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Processed Image");
+        fileChooser.setDialogTitle("Save Image");
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 ImageIO.write(resultImage, "png", fileToSave);
-                JOptionPane.showMessageDialog(this, "Processed image saved successfully.");
+                JOptionPane.showMessageDialog(this, "Image saved successfully.");
             } catch (IOException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error saving processed image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error saving image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    // 处理用户选择的区域并将其与能量矩阵相关联
-    private void processSelectedArea(Mat energyMatrix, double energyValue) {
-        if (selectedArea != null) {
-            int x = (int) selectedArea.getX();
-            int y = (int) selectedArea.getY();
-            int width = (int) selectedArea.getWidth();
-            int height = (int) selectedArea.getHeight();
-
-            // 将所选区域内的所有像素的能量值设置为指定的值
-            for (int i = y; i < y + height; i++) {
-                for (int j = x; j < x + width; j++) {
-                    energyMatrix.set(i, j, energyValue, energyValue, energyValue);
-                }
+    private void processSelectedArea(Mat mat, double penalty) {
+        for (int i = (int) selectedArea.getMinY(); i <= selectedArea.getMaxY(); i++) {
+            for (int j = (int) selectedArea.getMinX(); j <= selectedArea.getMaxX(); j++) {
+                mat.set(i, j, penalty,penalty,penalty);
             }
         }
     }
@@ -216,8 +269,7 @@ public class ImageGUI extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                ImageGUI imageGUI = new ImageGUI();
-                imageGUI.setVisible(true);
+                new ImageGUI().setVisible(true);
             }
         });
     }
