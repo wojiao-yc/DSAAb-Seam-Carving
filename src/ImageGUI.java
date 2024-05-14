@@ -17,7 +17,7 @@ public class ImageGUI extends JFrame {
     private JButton selectAreaButton;
     private JButton saveSelectedButton;
     private JButton expandButton;
-    private JButton saveExpansion;
+    private JButton saveExpansionButton;
 
     private BufferedImage originalImage;
     private BufferedImage markedImage;
@@ -46,11 +46,11 @@ public class ImageGUI extends JFrame {
         selectAreaButton = new JButton("选择保护区域");
         saveSelectedButton = new JButton("保存缩小后的图片");
         expandButton = new JButton("放大图片");
-        saveExpansion = new JButton("保存放大图片");
+        saveExpansionButton = new JButton("保存放大图片");
         bottomPanel.add(selectAreaButton);
         bottomPanel.add(saveSelectedButton);
         bottomPanel.add(expandButton);
-        bottomPanel.add(saveExpansion);
+        bottomPanel.add(saveExpansionButton);
 
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
@@ -68,6 +68,27 @@ public class ImageGUI extends JFrame {
 
                     if (widthMultiplier > 1 || heightMultiplier > 1) {
                         expandImage(widthMultiplier, heightMultiplier);
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(ImageGUI.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        saveSelectedButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String widthMultiplierInput = JOptionPane.showInputDialog("请输入宽度缩小的倍数：");
+                String heightMultiplierInput = JOptionPane.showInputDialog("请输入高度缩小的倍数：");
+
+                try {
+                    double widthMultiplier = Double.parseDouble(widthMultiplierInput);
+                    double heightMultiplier = Double.parseDouble(heightMultiplierInput);
+
+                    if (widthMultiplier < 1 || heightMultiplier < 1) {
+                        BufferedImage shrunkenImage = shrinkImage(widthMultiplier, heightMultiplier);
+                        imageLabel.setIcon(new ImageIcon(shrunkenImage));
+                        saveResultImage(shrunkenImage);
                     }
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ImageGUI.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
@@ -98,14 +119,7 @@ public class ImageGUI extends JFrame {
             }
         });
 
-        saveSelectedButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveSelectedButtonActionPerformed();
-            }
-        });
-
-        saveExpansion.addActionListener(new ActionListener() {
+        saveExpansionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 saveExpandedImage();
@@ -148,6 +162,43 @@ public class ImageGUI extends JFrame {
             JOptionPane.showMessageDialog(this, "图片放大失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    private BufferedImage shrinkImage(double widthMultiplier, double heightMultiplier) {
+        try {
+            int originalWidth = mat.getColSize();
+            int originalHeight = mat.getRowSize();
+
+            int newWidth = (int) (originalWidth * widthMultiplier);
+            int newHeight = (int) (originalHeight * heightMultiplier);
+
+            int horizontalSeamsToRemove = originalWidth - newWidth;
+            int verticalSeamsToRemove = originalHeight - newHeight;
+
+            energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+
+            // 删除垂直seam
+            for (int i = 0; i < verticalSeamsToRemove; i++) {
+                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+            }
+
+            // 删除水平seam
+            for (int i = 0; i < horizontalSeamsToRemove; i++) {
+                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+            }
+
+            BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+            return shrunkenImage;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+    }
+
 
     private void markSelectedArea() {
         JFrame markFrame = new JFrame();
@@ -200,41 +251,6 @@ public class ImageGUI extends JFrame {
         markFrame.setVisible(true);
     }
 
-    private void saveSelectedButtonActionPerformed() {
-        if (originalImage != null) {
-            if (selectedArea == null) {
-                int numSeamsToRemove = 100;
-                for (int i = 0; i < numSeamsToRemove; i++) {
-                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    int[] road = MatCalculation.findVerticalSeam(energyMatrix);
-                    mat = MatOperation.removeVerticalSeam(mat, road);
-                }
-                for (int i = 0; i < numSeamsToRemove; i++) {
-                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
-                    mat = MatOperation.removeHorizontalSeam(mat, road);
-                }
-                BufferedImage resultImage = MatOperation.matToImage(mat);
-                saveResultImage(resultImage);
-            } else {
-                processSelectedArea(mat, Double.MAX_VALUE);
-                int numSeamsToRemove = 100;
-                for (int i = 0; i < numSeamsToRemove; i++) {
-                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    int[] road = MatCalculation.findVerticalSeam(energyMatrix);
-                    mat = MatOperation.removeVerticalSeam(mat, road);
-                }
-                for (int i = 0; i < numSeamsToRemove; i++) {
-                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    int[] road = MatCalculation.findHorizontalSeam(energyMatrix);
-                    mat = MatOperation.removeHorizontalSeam(mat, road);
-                }
-                BufferedImage resultImage = MatOperation.matToImage(mat);
-                saveResultImage(resultImage);
-            }
-        }
-    }
-
     private void saveExpandedImage() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Expanded Image");
@@ -242,27 +258,28 @@ public class ImageGUI extends JFrame {
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
-                ImageIO.write(MatOperation.matToImage(mat), "png", fileToSave);
-                JOptionPane.showMessageDialog(this, "Expanded image saved successfully.");
+                BufferedImage expandedImage = MatOperation.matToImage(mat);
+                ImageIO.write(expandedImage, "png", fileToSave);
+                JOptionPane.showMessageDialog(this, "图片保存成功。");
             } catch (IOException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error saving expanded image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "保存图片失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void saveResultImage(BufferedImage resultImage) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Image");
+        fileChooser.setDialogTitle("保存图片");
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 ImageIO.write(resultImage, "png", fileToSave);
-                JOptionPane.showMessageDialog(this, "Image saved successfully.");
+                JOptionPane.showMessageDialog(this, "图片保存成功。");
             } catch (IOException ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error saving image: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "保存图片失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
