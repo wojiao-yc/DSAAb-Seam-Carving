@@ -40,6 +40,9 @@ public class Mat{
         this.Mat[row][col][2] = red;
     }
 
+    public double[][][] getMat() {
+        return Mat;
+    }
 
     // Obtain the row of mat
     public int getRowSize() {
