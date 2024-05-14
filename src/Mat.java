@@ -2,8 +2,8 @@
 // This class is used to create Mat data structures
 public class Mat{
     private double[][][] Mat;
-    private int rows;
-    private int cols;
+    public int rows;
+    public int cols;
 
 
     // Mat is a 3D array, storing rows, columns, and color channels separately

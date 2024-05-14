@@ -24,8 +24,6 @@ public class ImageGUI extends JFrame {
     private Rectangle2D.Double selectedArea;
     private Mat energyMatrix;
     private Mat mat;
-    private int horizontalSeamsToAdd;
-    private int verticalSeamsToAdd;
 
     public ImageGUI() {
         setTitle("Image GUI");
@@ -61,15 +59,15 @@ public class ImageGUI extends JFrame {
         expandButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String horizontalInput = JOptionPane.showInputDialog("请输入要插入的水平seam数量：");
-                String verticalInput = JOptionPane.showInputDialog("请输入要插入的竖直seam数量：");
+                String widthMultiplierInput = JOptionPane.showInputDialog("请输入宽度放大的倍数：");
+                String heightMultiplierInput = JOptionPane.showInputDialog("请输入高度放大的倍数：");
 
                 try {
-                    horizontalSeamsToAdd = Integer.parseInt(horizontalInput);
-                    verticalSeamsToAdd = Integer.parseInt(verticalInput);
+                    double widthMultiplier = Double.parseDouble(widthMultiplierInput);
+                    double heightMultiplier = Double.parseDouble(heightMultiplierInput);
 
-                    if (horizontalSeamsToAdd > 0 || verticalSeamsToAdd > 0) {
-                        expandImage(horizontalSeamsToAdd, verticalSeamsToAdd);
+                    if (widthMultiplier > 1 || heightMultiplier > 1) {
+                        expandImage(widthMultiplier, heightMultiplier);
                     }
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ImageGUI.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
@@ -115,18 +113,30 @@ public class ImageGUI extends JFrame {
         });
     }
 
-    private void expandImage(int horizontalSeams, int verticalSeams) {
+    private void expandImage(double widthMultiplier, double heightMultiplier) {
         try {
+            int originalWidth = mat.getColSize();
+            int originalHeight = mat.getRowSize();
+
+            int newWidth = (int) (originalWidth * widthMultiplier);
+            int newHeight = (int) (originalHeight * heightMultiplier);
+
+            int horizontalSeamsToAdd = newWidth - originalWidth;
+            int verticalSeamsToAdd = newHeight - originalHeight;
+
             energyMatrix = MatCalculation.computeEnergyMatrix(mat);
 
-            int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeams);
-            for (int i = 0; i < verticalSeams; i++) {
+            // 插入垂直seam
+            int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeamsToAdd);
+            for (int i = 0; i < verticalSeamsToAdd; i++) {
                 mat = MatOperation.insertVerticalSeam(mat, verticalSeamsToInsert[i]);
             }
 
             energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-            int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeams);
-            for (int i = 0; i < horizontalSeams; i++) {
+
+            // 插入水平seam
+            int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeamsToAdd);
+            for (int i = 0; i < horizontalSeamsToAdd; i++) {
                 mat = MatOperation.insertHorizontalSeam(mat, horizontalSeamsToInsert[i]);
             }
 
