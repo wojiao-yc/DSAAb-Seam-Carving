@@ -179,13 +179,13 @@ public class ImageGUI extends JFrame {
             int horizontalSeamsToRemove = originalWidth - newWidth;
             int verticalSeamsToRemove = originalHeight - newHeight;
 
-//            energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-
+            // 确保使用了修改后的能量矩阵
             // 删除垂直seam
             for (int i = 0; i < verticalSeamsToRemove; i++) {
                 int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
                 mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
             }
 
             // 删除水平seam
@@ -193,8 +193,8 @@ public class ImageGUI extends JFrame {
                 int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
                 mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
             }
-
 
             BufferedImage shrunkenImage = MatOperation.matToImage(mat);
             return shrunkenImage;
@@ -203,7 +203,6 @@ public class ImageGUI extends JFrame {
             JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             return null;
         }
-
     }
 
     private void markSelectedArea() {
@@ -253,92 +252,18 @@ public class ImageGUI extends JFrame {
             }
         });
 
-        JButton protectAreaButton = new JButton("保护选定区域");
-        protectAreaButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (selectedArea != null) {
-                    processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE);
-                    JOptionPane.showMessageDialog(markFrame, "保护区域设置成功！");
-                } else {
-                    JOptionPane.showMessageDialog(markFrame, "请先选择一个区域！", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(protectAreaButton);
-
-        markFrame.add(panel, BorderLayout.CENTER);
-        markFrame.add(buttonPanel, BorderLayout.SOUTH);
+        markFrame.add(panel);
         markFrame.setVisible(true);
     }
 
     private void processSelectedArea(Mat energyMatrix, Rectangle2D selectedArea, double penalty) {
-        int minX = (int) Math.max(0, selectedArea.getMinX());
-        int minY = (int) Math.max(0, selectedArea.getMinY());
-        int maxX = (int) Math.min(energyMatrix.getColSize() - 1, selectedArea.getMaxX());
-        int maxY = (int) Math.min(energyMatrix.getRowSize() - 1, selectedArea.getMaxY());
-
-        for (int i = minY; i <= maxY; i++) {
-            for (int j = minX; j <= maxX; j++) {
+        for (int i = (int) selectedArea.getMinY(); i <= selectedArea.getMaxY(); i++) {
+            for (int j = (int) selectedArea.getMinX(); j <= selectedArea.getMaxX(); j++) {
                 energyMatrix.set(i, j, penalty, penalty, penalty);
             }
         }
+        System.out.println("Set方法已调用");
     }
-
-//    private boolean processSelectedArea(Mat energyMatrix, double penalty) {
-//        System.out.println("Processing selected area:");
-//        System.out.println("Selected area coordinates: " + selectedArea);
-//
-//        boolean changed = false;
-//        int minX = (int) Math.max(0, selectedArea.getMinX());
-//        int minY = (int) Math.max(0, selectedArea.getMinY());
-//        int maxX = (int) Math.min(energyMatrix.getColSize() - 1, selectedArea.getMaxX());
-//        int maxY = (int) Math.min(energyMatrix.getRowSize() - 1, selectedArea.getMaxY());
-//
-//        // 保存energyMatrix的原始状态
-//        double[][][] originalValues = new double[maxY - minY + 1][maxX - minX + 1][3];
-//        for (int i = minY; i <= maxY; i++) {
-//            for (int j = minX; j <= maxX; j++) {
-//                originalValues[i - minY][j - minX] = energyMatrix.get(i, j);
-//            }
-//        }
-//
-//        // 修改energyMatrix
-//        for (int i = minY; i <= maxY; i++) {
-//            for (int j = minX; j <= maxX; j++) {
-//                energyMatrix.set(i, j, penalty, penalty, penalty);
-//            }
-//        }
-//
-//        // 检查修改是否成功
-//        for (int i = minY; i <= maxY; i++) {
-//            for (int j = minX; j <= maxX; j++) {
-//                double[] original = originalValues[i - minY][j - minX];
-//                double[] current = energyMatrix.get(i, j);
-//                if (original[0] != current[0] || original[1] != current[1] || original[2] != current[2]) {
-//                    changed = true;
-//                    break;
-//                }
-//            }
-//            if (changed) break;
-//        }
-//
-//        System.out.println("Set方法已调用");
-//        return changed;
-//    }
-
-
-
-//    private void processSelectedArea(Mat energyMatrix, double penalty) {
-//        for (int i = (int) selectedArea.getMinY(); i <= selectedArea.getMaxY(); i++) {
-//            for (int j = (int) selectedArea.getMinX(); j <= selectedArea.getMaxX(); j++) {
-//                energyMatrix.set(i, j, penalty, penalty, penalty);
-//            }
-//        }
-//        System.out.println("Set方法已调用");
-//    }
 
     private void saveResultImage(BufferedImage image) {
         JFileChooser fileChooser = new JFileChooser();
