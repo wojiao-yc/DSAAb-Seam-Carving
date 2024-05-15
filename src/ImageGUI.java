@@ -182,19 +182,24 @@ public class ImageGUI extends JFrame {
             // 确保使用了修改后的能量矩阵
             // 删除垂直seam
             for (int i = 0; i < verticalSeamsToRemove; i++) {
-                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
-                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
                 processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+
+
             }
 
             // 删除水平seam
             for (int i = 0; i < horizontalSeamsToRemove; i++) {
-                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
-                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
                 processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
             }
+//
+            // 打印剩余像素的能量值矩阵
+            printEnergyMatrix(energyMatrix);
 
             BufferedImage shrunkenImage = MatOperation.matToImage(mat);
             return shrunkenImage;
@@ -202,6 +207,17 @@ public class ImageGUI extends JFrame {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             return null;
+        }
+    }
+
+    // 新增的方法：打印能量值矩阵
+    private void printEnergyMatrix(Mat energyMatrix) {
+        System.out.println("Energy Matrix:");
+        for (int i = 0; i < energyMatrix.getRowSize(); i++) {
+            for (int j = 0; j < energyMatrix.getColSize(); j++) {
+                System.out.print(energyMatrix.get(i, j, 0) + " ");
+            }
+            System.out.println();
         }
     }
 
@@ -257,13 +273,21 @@ public class ImageGUI extends JFrame {
     }
 
     private void processSelectedArea(Mat energyMatrix, Rectangle2D selectedArea, double penalty) {
-        for (int i = (int) selectedArea.getMinY(); i <= selectedArea.getMaxY(); i++) {
-            for (int j = (int) selectedArea.getMinX(); j <= selectedArea.getMaxX(); j++) {
+        int minX = Math.max(0, (int) selectedArea.getMinX());
+        int minY = Math.max(0, (int) selectedArea.getMinY());
+        int maxX = Math.min(energyMatrix.getColSize() - 1, (int) selectedArea.getMaxX());
+        int maxY = Math.min(energyMatrix.getRowSize() - 1, (int) selectedArea.getMaxY());
+
+        System.out.println("Processing area: (" + minY + "," + minX + ") to (" + maxY + "," + maxX + ")");
+        for (int i = minY; i <= maxY; i++) {
+            for (int j = minX; j <= maxX; j++) {
                 energyMatrix.set(i, j, penalty, penalty, penalty);
+                double[] values = energyMatrix.get(i, j);
+                System.out.println("Set energy matrix at (" + i + "," + j + ") to (" + values[0] + ", " + values[1] + ", " + values[2] + ")");
             }
         }
-        System.out.println("Set方法已调用");
     }
+
 
     private void saveResultImage(BufferedImage image) {
         JFileChooser fileChooser = new JFileChooser();
