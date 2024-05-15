@@ -174,40 +174,65 @@ public class ImageGUI extends JFrame {
             int originalWidth = mat.getColSize();
             int originalHeight = mat.getRowSize();
 
-            int newWidth = (int) (originalWidth * widthMultiplier);
-            int newHeight = (int) (originalHeight * heightMultiplier);
+            // 检查是否存在选定区域，如果不存在，则直接按照输入的倍数进行缩小
+            if (selectedArea == null) {
+                int newWidth = (int) (originalWidth * widthMultiplier);
+                int newHeight = (int) (originalHeight * heightMultiplier);
 
-            int horizontalSeamsToRemove = originalWidth - newWidth;
-            int verticalSeamsToRemove = originalHeight - newHeight;
+                int horizontalSeamsToRemove = originalWidth - newWidth;
+                int verticalSeamsToRemove = originalHeight - newHeight;
 
-            // 确保使用了修改后的能量矩阵
-            // 删除垂直seam
-            for (int i = 0; i < verticalSeamsToRemove; i++) {
-                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
-                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
-                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                // 删除垂直seam
+                for (int i = 0; i < verticalSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                    mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                }
+
+                // 删除水平seam
+                for (int i = 0; i < horizontalSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                    mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
+                }
+
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
+            } else {
+                // 存在选定区域，按照原有逻辑进行缩小操作
+                int newWidth = (int) (originalWidth * widthMultiplier);
+                int newHeight = (int) (originalHeight * heightMultiplier);
+
+                int horizontalSeamsToRemove = originalWidth - newWidth;
+                int verticalSeamsToRemove = originalHeight - newHeight;
+
+                // 确保使用了修改后的能量矩阵
+                // 删除垂直seam
+                for (int i = 0; i < verticalSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                    int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                    mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                }
+
+                // 删除水平seam
+                for (int i = 0; i < horizontalSeamsToRemove; i++) {
+                    energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                    processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                    int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                    mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
+                }
+
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
             }
-
-            // 删除水平seam
-            for (int i = 0; i < horizontalSeamsToRemove; i++) {
-                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
-                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
-                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
-            }
-
-            // 打印剩余像素的能量值矩阵
-            printEnergyMatrix(energyMatrix);
-
-            BufferedImage shrunkenImage = MatOperation.matToImage(mat);
-            return shrunkenImage;
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
+
 
     // 新增的方法：打印能量值矩阵
     private void printEnergyMatrix(Mat energyMatrix) {
