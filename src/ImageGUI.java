@@ -18,6 +18,7 @@ public class ImageGUI extends JFrame {
     private JButton saveSelectedButton;
     private JButton expandButton;
     private JButton saveExpansionButton;
+    private JButton getSelectedAreaCoordsButton;
 
     private BufferedImage originalImage;
     private BufferedImage markedImage;
@@ -186,8 +187,6 @@ public class ImageGUI extends JFrame {
                 processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
                 int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
                 mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
-
-
             }
 
             // 删除水平seam
@@ -197,7 +196,7 @@ public class ImageGUI extends JFrame {
                 int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
                 mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
             }
-//
+
             // 打印剩余像素的能量值矩阵
             printEnergyMatrix(energyMatrix);
 
@@ -265,11 +264,19 @@ public class ImageGUI extends JFrame {
                 g2d.draw(selectedArea);
                 g2d.dispose();
                 panel.repaint();
+                Rectangle2D.Double coords = getSelectedAreaCoords();
+                System.out.println("Selected area coordinates: (" + coords.getMinX() + ", " + coords.getMinY() + ") to (" + coords.getMaxX() + ", " + coords.getMaxY() + ")");
             }
         });
 
         markFrame.add(panel);
         markFrame.setVisible(true);
+
+    }
+
+    // 新增的方法：获取选定区域的坐标
+    private Rectangle2D.Double getSelectedAreaCoords() {
+        return selectedArea;
     }
 
     private void processSelectedArea(Mat energyMatrix, Rectangle2D selectedArea, double penalty) {
@@ -287,7 +294,6 @@ public class ImageGUI extends JFrame {
             }
         }
     }
-
 
     private void saveResultImage(BufferedImage image) {
         JFileChooser fileChooser = new JFileChooser();
