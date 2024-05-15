@@ -76,13 +76,6 @@ public class GUI_v1 extends JFrame {
                         }
                         for (int i = 0; i < step; i++) {
                             expandImage(Math.pow(widthMultiplier, 1/step), Math.pow(heightMultiplier, 1/step));
-                            try {
-                                // 暂停1000毫秒（即1秒）
-                                Thread.sleep(1000);
-                            } catch (InterruptedException f) {
-                                // 如果sleep被中断，打印中断信息
-                                System.err.println("Sleep was interrupted");
-                            }
                         }
 
                     }
