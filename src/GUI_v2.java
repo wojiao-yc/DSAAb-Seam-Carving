@@ -302,11 +302,16 @@ public class GUI_v2 extends JFrame {
                 g2d.draw(selectedArea);
                 g2d.dispose();
                 panel.repaint();
+                Rectangle2D.Double coords = getSelectedAreaCoords();
+                System.out.println("Selected area coordinates: (" + coords.getMinX() + ", " + coords.getMinY() + ") to (" + coords.getMaxX() + ", " + coords.getMaxY() + ")");
             }
         });
-
         markFrame.add(panel);
         markFrame.setVisible(true);
+    }
+    // 新增的方法：获取选定区域的坐标
+    private Rectangle2D.Double getSelectedAreaCoords() {
+        return selectedArea;
     }
 
     private void saveExpandedImage() {
