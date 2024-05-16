@@ -1,3 +1,17 @@
+/*
+GUI使用说明：
+1.运行java程序GUI_v3，打开窗口
+2.点击“打开图像”按钮，选择想要放大或者缩小的图像文件，支持png、jpg等格式
+3.打开后图像显示在窗口中，点击图片可框选区域
+4.点击“区域模式：xx”按钮切换模式，可以保护选中区域不被删除或者优先删除区域内容
+5.点击“清除选区”按钮清除已选区域
+6.点击“缩小图像”按钮执行缩小图像操作，输入宽和高缩小倍数（0~1），在窗口可以观察缩小过程
+7.点击“放大图像”按钮执行放大图像操作，输入宽和高放大倍数（>=1），在窗口可以观察放大过程（放大操作不受区域控制）
+8.点击“保存图像”按钮保存放大或缩小的图像，注意将文件命名为xxx.png
+9.在一次放大或者缩小完成后，用户可以继续对放大或缩小后的图片进行进一步放大或缩小操作
+ */
+
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -161,8 +175,8 @@ public class GUI_v3 extends JFrame {
         expandButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String widthMultiplierInput = JOptionPane.showInputDialog("请输入高度放大的倍数：");
-                String heightMultiplierInput = JOptionPane.showInputDialog("请输入宽度放大的倍数：");
+                String widthMultiplierInput = JOptionPane.showInputDialog("请输入宽度放大的倍数：");
+                String heightMultiplierInput = JOptionPane.showInputDialog("请输入高度放大的倍数：");
 
                 try {
                     double widthMultiplier = Double.parseDouble(widthMultiplierInput);
@@ -175,7 +189,7 @@ public class GUI_v3 extends JFrame {
                             @Override
                             protected Void doInBackground() throws Exception {
                                 double step = 1;
-                                while(Math.pow(widthMultiplier, 1/step) > 1.15 || Math.pow(heightMultiplier, 1/step) > 1.15){
+                                while(Math.pow(widthMultiplier, 1/step) > 1.01 || Math.pow(heightMultiplier, 1/step) > 1.01){
                                     step++;
                                 }
                                 for (int i = 0; i < step; i++) {
@@ -214,8 +228,8 @@ public class GUI_v3 extends JFrame {
         shrinkButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String widthMultiplierInput = JOptionPane.showInputDialog("请输入高度缩小的倍数：");
-                String heightMultiplierInput = JOptionPane.showInputDialog("请输入宽度缩小的倍数：");
+                String widthMultiplierInput = JOptionPane.showInputDialog("请输入宽度缩小的倍数：");
+                String heightMultiplierInput = JOptionPane.showInputDialog("请输入高度缩小的倍数：");
 
                 try {
                     double widthMultiplier = Double.parseDouble(widthMultiplierInput);
@@ -227,8 +241,8 @@ public class GUI_v3 extends JFrame {
                         int newWidth = (int) (originalWidth * widthMultiplier);
                         int newHeight = (int) (originalHeight * heightMultiplier);
 
-                        int horizontalSeamsToRemove = originalWidth - newWidth;
-                        int verticalSeamsToRemove = originalHeight - newHeight;
+                        int horizontalSeamsToRemove = originalHeight - newHeight;
+                        int verticalSeamsToRemove = originalWidth - newWidth;
 
                         // 创建并执行SwingWorker
                         new SwingWorker<Void, BufferedImage>() {
@@ -326,40 +340,26 @@ public class GUI_v3 extends JFrame {
             int newWidth = (int) (originalWidth * widthMultiplier);
             int newHeight = (int) (originalHeight * heightMultiplier);
 
-            int horizontalSeamsToAdd = newWidth - originalWidth;
-            int verticalSeamsToAdd = newHeight - originalHeight;
-            if(selectedArea==null) {
+            int horizontalSeamsToAdd = newHeight - originalHeight;
+            int verticalSeamsToAdd = newWidth - originalWidth;
+            if(true) {
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
 
                 // 插入垂直seam
-                int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeamsToAdd);
-                for (int i = 0; i < verticalSeamsToAdd; i++) {
-                    mat = MatOperation.insertVerticalSeam(mat, verticalSeamsToInsert[i]);
+                if(widthMultiplier>1) {
+                    int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeamsToAdd);
+                    for (int i = 0; i < verticalSeamsToAdd; i++) {
+                        mat = MatOperation.insertVerticalSeam(mat, verticalSeamsToInsert[i]);
+                    }
                 }
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
                 // 插入水平seam
-                int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeamsToAdd);
-                for (int i = 0; i < horizontalSeamsToAdd; i++) {
-                    mat = MatOperation.insertHorizontalSeam(mat, horizontalSeamsToInsert[i]);
+                if(heightMultiplier>1) {
+                    int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeamsToAdd);
+                    for (int i = 0; i < horizontalSeamsToAdd; i++) {
+                        mat = MatOperation.insertHorizontalSeam(mat, horizontalSeamsToInsert[i]);
+                    }
                 }
-
-                BufferedImage expandedImage = MatOperation.matToImage(mat);
-                return expandedImage;
-            }else{
-                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-
-                // 插入垂直seam
-                int[][] verticalSeamsToInsert = MatCalculation.findNthVerticalSeam(energyMatrix, verticalSeamsToAdd);
-                for (int i = 0; i < verticalSeamsToAdd; i++) {
-                    mat = MatOperation.insertVerticalSeam(mat, verticalSeamsToInsert[i]);
-                }
-                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                // 插入水平seam
-                int[][] horizontalSeamsToInsert = MatCalculation.findNthHorizontalSeam(energyMatrix, horizontalSeamsToAdd);
-                for (int i = 0; i < horizontalSeamsToAdd; i++) {
-                    mat = MatOperation.insertHorizontalSeam(mat, horizontalSeamsToInsert[i]);
-                }
-
                 BufferedImage expandedImage = MatOperation.matToImage(mat);
                 return expandedImage;
             }
