@@ -47,15 +47,17 @@ public class GUI_v4 extends JFrame {
         JPanel bottomPanel = new JPanel();
         removeAreaButton = new JButton("清除保护区域");
         shrinkWithProtectionButton = new JButton("缩小图片并保护特定区域");
+        shrinkWithDeletionButton = new JButton("缩小图片并删除框定区域");
         expandButton = new JButton("放大图片");
         saveExpansionButton = new JButton("保存图片");
-        shrinkWithDeletionButton = new JButton("缩小图片并删除框定区域");
+
 
         bottomPanel.add(removeAreaButton);
         bottomPanel.add(shrinkWithProtectionButton);
+        bottomPanel.add(shrinkWithDeletionButton);
         bottomPanel.add(expandButton);
         bottomPanel.add(saveExpansionButton);
-        bottomPanel.add(shrinkWithDeletionButton);
+
 
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
@@ -224,13 +226,13 @@ public class GUI_v4 extends JFrame {
                             @Override
                             protected Void doInBackground() throws Exception {
                                 for (int i = 0; i < verticalSeamsToRemove; i++) {
-                                    BufferedImage shrunkenImage = shrinkVerticalSeam();
+                                    BufferedImage shrunkenImage = shrinkVerticalSeam1();
                                     publish(shrunkenImage);
                                     originalImage=shrunkenImage;
 //                                    Thread.sleep(0); // 暂停500毫秒
                                 }
                                 for (int i = 0; i < horizontalSeamsToRemove; i++) {
-                                    BufferedImage shrunkenImage = shrinkHorizontalSeam();
+                                    BufferedImage shrunkenImage = shrinkHorizontalSeam1();
                                     publish(shrunkenImage);
                                     originalImage=shrunkenImage;
 //                                    Thread.sleep(0); // 暂停500毫秒
@@ -504,6 +506,32 @@ public class GUI_v4 extends JFrame {
             return null;
         }
     }
+    private BufferedImage shrinkVerticalSeam1() {
+        try {
+            // 检查是否存在选定区域，如果不存在，则直接按照输入的倍数进行缩小
+            if (selectedArea == null) {
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
+            } else {
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                processSelectedArea(energyMatrix, selectedArea, 0); // 重新设置保护区域的能量
+                int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
+                mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
+                if(verticalSeam[(int) selectedArea.getMinY()] < (int) selectedArea.getMinX()){
+                    selectedArea.setRect(selectedArea.x-1,selectedArea.y,selectedArea.width,selectedArea.height);
+                }
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+    }
 
     private BufferedImage shrinkHorizontalSeam() {
         try {
@@ -531,7 +559,32 @@ public class GUI_v4 extends JFrame {
             return null;
         }
     }
-
+    private BufferedImage shrinkHorizontalSeam1() {
+        try {
+            // 检查是否存在选定区域，如果不存在，则直接按照输入的倍数进行缩小
+            if (selectedArea == null) {
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
+            } else {
+                energyMatrix = MatCalculation.computeEnergyMatrix(mat);
+                processSelectedArea(energyMatrix, selectedArea, 0); // 重新设置保护区域的能量
+                int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
+                mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
+                if(horizontalSeam[(int) selectedArea.getMinX()] < (int) selectedArea.getMinY()){
+                    selectedArea.setRect(selectedArea.x,selectedArea.y-1,selectedArea.width,selectedArea.height);
+                }
+                BufferedImage shrunkenImage = MatOperation.matToImage(mat);
+                return shrunkenImage;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "图片缩小失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+    }
     private Rectangle2D.Double getSelectedAreaCoords() {
         return selectedArea;
     }
@@ -574,7 +627,7 @@ public class GUI_v4 extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new GUI_v3().setVisible(true);
+                new GUI_v4().setVisible(true);
             }
         });
     }
