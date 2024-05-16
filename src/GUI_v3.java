@@ -12,6 +12,7 @@ public class GUI_v3 extends JFrame {
     private JButton openImageButton;
     private JLabel imageLabel;
     private JButton removeAreaButton;
+    private JButton areaModeButton;
     private JButton expandButton;
     private JButton shrinkButton;
     private JButton saveExpansionButton;
@@ -21,6 +22,8 @@ public class GUI_v3 extends JFrame {
     private Rectangle2D.Double selectedArea;
     private Mat energyMatrix;
     private Mat mat;
+
+    private String areaMode;
 
     public GUI_v3() {
         setTitle("Image GUI");
@@ -42,10 +45,13 @@ public class GUI_v3 extends JFrame {
         centerPanel.add(new JScrollPane(imageLabel), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel();
-        removeAreaButton = new JButton("清除保护区域");
+        areaModeButton = new JButton("选区模式：保护");
+        areaMode="protect";
+        removeAreaButton = new JButton("清除区域");
         shrinkButton = new JButton("缩小图片");
         expandButton = new JButton("放大图片");
         saveExpansionButton = new JButton("保存图片");
+        bottomPanel.add(areaModeButton);
         bottomPanel.add(removeAreaButton);
         bottomPanel.add(shrinkButton);
         bottomPanel.add(expandButton);
@@ -79,6 +85,19 @@ public class GUI_v3 extends JFrame {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
+                }
+            }
+        });
+
+        areaModeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(areaMode.equals("protect")) {
+                    areaMode = "delete";
+                    areaModeButton.setText("选区模式：删除");
+                } else if (areaMode.equals("delete")) {
+                    areaMode = "protect";
+                    areaModeButton.setText("选区模式：保护");
                 }
             }
         });
@@ -187,6 +206,7 @@ public class GUI_v3 extends JFrame {
                     }
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(GUI_v3.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
+                    selectedArea=null;
                 }
             }
         });
@@ -242,6 +262,7 @@ public class GUI_v3 extends JFrame {
                             protected void done() {
                                 // 在所有任务完成后可以执行的操作
                                 JOptionPane.showMessageDialog(GUI_v3.this, "图像缩小已完成！", "完成", JOptionPane.INFORMATION_MESSAGE);
+                                selectedArea=null;
                             }
                         }.execute();
                     }
@@ -292,7 +313,7 @@ public class GUI_v3 extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 selectedArea=null;
                 imageLabel.setIcon(new ImageIcon(originalImage));
-                System.out.println("清除保护区域");
+                System.out.println("清除区域");
             }
         });
     }
@@ -361,7 +382,7 @@ public class GUI_v3 extends JFrame {
                 return expandedImage;
             } else {
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                 int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
                 mat = MatOperation.insertVerticalSeam(mat, verticalSeam);
                 if(verticalSeam[(int) selectedArea.getMinY()] < (int) selectedArea.getMinX()){
@@ -388,7 +409,7 @@ public class GUI_v3 extends JFrame {
                 return expandedImage;
             } else {
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                 int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
                 mat = MatOperation.insertHorizontalSeam(mat, horizontalSeam);
                 if(horizontalSeam[(int) selectedArea.getMinY()] < (int) selectedArea.getMinX()){
@@ -445,7 +466,7 @@ public class GUI_v3 extends JFrame {
                 // 删除垂直seam
                 for (int i = 0; i < verticalSeamsToRemove; i++) {
                     energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                    processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                     int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
                     mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
                 }
@@ -453,7 +474,7 @@ public class GUI_v3 extends JFrame {
                 // 删除水平seam
                 for (int i = 0; i < horizontalSeamsToRemove; i++) {
                     energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                    processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                    processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                     int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
                     mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
                 }
@@ -480,7 +501,7 @@ public class GUI_v3 extends JFrame {
                 return shrunkenImage;
             } else {
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                 int[] verticalSeam = MatCalculation.findVerticalSeam(energyMatrix);
                 mat = MatOperation.removeVerticalSeam(mat, verticalSeam);
                 if(verticalSeam[(int) selectedArea.getMinY()] < (int) selectedArea.getMinX()){
@@ -507,7 +528,7 @@ public class GUI_v3 extends JFrame {
                 return shrunkenImage;
             } else {
                 energyMatrix = MatCalculation.computeEnergyMatrix(mat);
-                processSelectedArea(energyMatrix, selectedArea, Double.MAX_VALUE); // 重新设置保护区域的能量
+                processSelectedArea(energyMatrix, selectedArea); // 重新设置保护区域的能量
                 int[] horizontalSeam = MatCalculation.findHorizontalSeam(energyMatrix);
                 mat = MatOperation.removeHorizontalSeam(mat, horizontalSeam);
                 if(horizontalSeam[(int) selectedArea.getMinX()] < (int) selectedArea.getMinY()){
@@ -545,12 +566,15 @@ public class GUI_v3 extends JFrame {
     }
 
 
-    private void processSelectedArea(Mat energyMatrix, Rectangle2D selectedArea, double penalty) {
+    private void processSelectedArea(Mat energyMatrix, Rectangle2D selectedArea) {
         int minX = Math.max(0, (int) selectedArea.getMinX());
         int minY = Math.max(0, (int) selectedArea.getMinY());
         int maxX = Math.min(energyMatrix.getColSize() - 1, (int) selectedArea.getMaxX());
         int maxY = Math.min(energyMatrix.getRowSize() - 1, (int) selectedArea.getMaxY());
-
+        double penalty=Double.MAX_VALUE;
+        if(areaMode.equals("delete")){
+            penalty=Double.MIN_VALUE;
+        }
         System.out.println("Processing area: (" + minY + "," + minX + ") to (" + maxY + "," + maxX + ")");
         for (int i = minY; i <= maxY; i++) {
             for (int j = minX; j <= maxX; j++) {
